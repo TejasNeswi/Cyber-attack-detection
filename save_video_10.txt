@@ -1,0 +1,4 @@
+!apt install -y ffmpeg
+# Save the animation as an MP4 file
+anim.save("fake_edges_animation.mp4", writer="ffmpeg", fps=2)
+print("✅ Animation saved as fake_edges_animation.mp4")

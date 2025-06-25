@@ -1,0 +1,4 @@
+anim = animate_fake_edges(data, fake_color="crimson")
+
+from IPython.display import HTML
+HTML(anim.to_jshtml())

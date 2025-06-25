@@ -1,0 +1,11 @@
+# Install PyTorch (make sure version matches CUDA requirements)
+!pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+
+# Install PyTorch Geometric and its dependencies
+!pip install torch-scatter -f https://data.pyg.org/whl/torch-2.1.0+cpu.html
+!pip install torch-sparse -f https://data.pyg.org/whl/torch-2.1.0+cpu.html
+!pip install torch-geometric
+!pip install matplotlib networkx
+# pip install pillow
+# Install PyTorch Geometric dependencies (for CUDA 11.8, which matches Colab's default)
+!pip install -q torch-scatter torch-sparse torch-geometric torch-cluster torch-spline-conv -f https://data.pyg.org/whl/torch-2.0.0+cu118.html

@@ -1,0 +1,7 @@
+# detect.py
+model.eval()
+with torch.no_grad():
+    out = model(data)
+    pred = out.argmax(dim=1)
+    anomalies = torch.nonzero(pred == 1).view(-1)
+    print("⚠️ Anomalous Nodes Detected:", anomalies.tolist())

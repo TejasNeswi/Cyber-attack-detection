@@ -1,0 +1,68 @@
+import matplotlib.pyplot as plt
+import networkx as nx
+from matplotlib import animation
+
+def animate_fake_edges(data, fake_color="crimson"):
+    G = nx.DiGraph()
+    num_nodes = data.num_nodes
+
+    # Add nodes
+    for i in range(num_nodes):
+        label = data.y[i].item()
+        color = 'red' if label == 1 else 'skyblue'
+        G.add_node(i, color=color)
+
+    edge_list = data.edge_index.t().tolist()
+    fake_mask = data.fake_edge_mask.tolist()
+    pos = nx.spring_layout(G, seed=42)
+
+    # Separate edges
+    normal_edges = [tuple(e) for e, f in zip(edge_list, fake_mask) if not f]
+    fake_edges = [tuple(e) for e, f in zip(edge_list, fake_mask) if f]
+
+    # Add static normal edges
+    G.add_edges_from(normal_edges)
+
+    # Normalize fake edges to a set for fast lookup (undirected)
+    fake_set = {tuple(e) for e in fake_edges}
+    fake_set |= {tuple(reversed(e)) for e in fake_edges}  # Add reversed pairs
+
+    fig, ax = plt.subplots(figsize=(10, 8))
+
+    def update(frame):
+        ax.clear()
+        G_temp = G.copy()
+
+        # Add fake edges progressively
+        current_fake = fake_edges[:frame + 1]
+        G_temp.add_edges_from(current_fake)
+
+        node_colors = [G.nodes[n]['color'] for n in G.nodes()]
+
+        # Edge colors
+        edge_colors = []
+        for edge in G_temp.edges():
+            if edge in current_fake or tuple(reversed(edge)) in current_fake:
+                edge_colors.append(fake_color)
+            else:
+                edge_colors.append("gray")
+
+        nx.draw(
+            G_temp, pos, ax=ax,
+            with_labels=True,
+            node_color=node_colors,
+            edge_color=edge_colors,
+            node_size=500,
+            arrows=True,
+            width=2
+        )
+        ax.set_title(f"Fake Edge Frame {frame + 1} / {len(fake_edges)}")
+
+    anim = animation.FuncAnimation(
+        fig, update,
+        frames=len(fake_edges),
+        interval=400,
+        repeat=False
+    )
+
+    return anim

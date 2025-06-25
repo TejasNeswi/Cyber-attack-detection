@@ -1,0 +1,60 @@
+import torch
+import pandas as pd
+import numpy as np
+from torch_geometric.data import Data
+from sklearn.preprocessing import StandardScaler
+
+def load_and_simulate_graph(csv_path, num_nodes=50, anomaly_ratio=0.3):
+    # Load and sample
+    df = pd.read_csv(csv_path)
+    df = df.sample(n=num_nodes, random_state=42).reset_index(drop=True)
+
+    # Normalize numeric features
+    numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
+    if 'node_id' in numeric_cols:
+        numeric_cols.remove('node_id')
+
+    scaler = StandardScaler()
+    x_scaled = scaler.fit_transform(df[numeric_cols])
+    x = torch.tensor(x_scaled, dtype=torch.float)
+
+    # Assign anomaly labels
+    y = torch.zeros(num_nodes, dtype=torch.long)
+    anomaly_nodes = np.random.choice(num_nodes, size=int(anomaly_ratio * num_nodes), replace=False)
+    y[anomaly_nodes] = 1
+
+    # Generate legitimate edges
+    normal_edges = []
+    for i in range(num_nodes):
+        j = np.random.choice([n for n in range(num_nodes) if n != i])
+        normal_edges.append([i, j])
+
+    extra_edges = np.random.randint(0, num_nodes, (num_nodes * 2, 2)).tolist()
+    normal_edges += extra_edges
+
+    # Generate fake (spoofed) edges from anomaly nodes
+    num_fake = int(0.3 * len(normal_edges))
+    fake_edges = []
+    for _ in range(num_fake):
+        attacker = np.random.choice(anomaly_nodes)
+        victim = np.random.choice([n for n in range(num_nodes) if n != attacker])
+        fake_edges.append([attacker, victim])
+
+    # Combine edges and mark fake ones
+    all_edges = normal_edges + fake_edges
+    is_fake = [False] * len(normal_edges) + [True] * len(fake_edges)
+
+    # Convert to tensors (no undirected duplication)
+    edge_index = torch.tensor(all_edges, dtype=torch.long).t().contiguous()
+    fake_edge_mask = torch.tensor(is_fake, dtype=torch.bool)
+
+    # Logging
+    print(" Final Label Distribution:", dict(zip(*torch.unique(y, return_counts=True))))
+    print(" Total Directed Edges:", edge_index.shape[1])
+    print(" Fake Edges:", fake_edge_mask.sum().item())
+
+    # Build graph data
+    data = Data(x=x, edge_index=edge_index, y=y)
+    data.fake_edge_mask = fake_edge_mask
+
+    return data

@@ -1,0 +1,2 @@
+from google.colab import files
+files.download("/content/fake_edges_animation.mp4")
